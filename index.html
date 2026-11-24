@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SAHWAHITA CAT BCKS</title><link rel="icon" href="logo.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{--n:#14295c;--g:#f2b01e;--r:#d4262c;--bg:#f4f6fb;--c:#fff;--t:#1b2330;--m:#667085;--l:#dde3ee;--ok:#16a34a}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1526;--c:#17213a;--t:#e8ecf5;--m:#9aa6bf;--l:#2a3656}}
+*{box-sizing:border-box}body{margin:0;font:15px/1.55 system-ui,sans-serif;background:var(--bg);color:var(--t)}
+header{background:var(--n);color:#fff;display:flex;align-items:center;gap:12px;padding:8px 16px;border-bottom:4px solid var(--g);flex-wrap:wrap}
+header img{height:46px}header b{font-size:17px;flex:1}header span{font-size:13px;opacity:.85}
+main{max-width:1100px;margin:18px auto;padding:0 14px}
+.card{background:var(--c);border:1px solid var(--l);border-radius:12px;padding:16px;margin-bottom:14px}
+h2,h3{margin:.2em 0 .6em;color:var(--n)}@media(prefers-color-scheme:dark){h2,h3{color:var(--g)}}
+button,.btn{background:var(--n);color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;font:inherit;display:inline-block}
+button.g{background:var(--g);color:#1b1b1b}button.r{background:var(--r)}button.o{background:transparent;color:var(--t);border:1px solid var(--l)}button:disabled{opacity:.5}
+input,select,textarea{font:inherit;padding:8px;border:1px solid var(--l);border-radius:8px;background:var(--c);color:var(--t);width:100%}
+label{display:block;font-size:13px;color:var(--m);margin:8px 0 3px}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.row>*{flex:1;min-width:140px}
+table{border-collapse:collapse;width:100%;font-size:14px}th,td{border-bottom:1px solid var(--l);padding:6px 8px;text-align:left;vertical-align:top}th{color:var(--m);font-weight:600}
+.tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}.tabs button{background:var(--c);color:var(--t);border:1px solid var(--l)}.tabs button.on{background:var(--n);color:#fff}
+.tag{font-size:12px;padding:2px 8px;border-radius:99px;background:var(--l);color:var(--t)}.tag.ok{background:var(--ok);color:#fff}.tag.r{background:var(--r);color:#fff}
+.ex{display:grid;grid-template-columns:1fr 260px;gap:14px}@media(max-width:800px){.ex{grid-template-columns:1fr}}
+.opt{display:flex;gap:10px;padding:10px;border:1px solid var(--l);border-radius:10px;margin:6px 0;cursor:pointer}.opt.sel{border-color:var(--n);background:rgba(20,41,92,.1)}
+.opt.ok{border-color:var(--ok);background:rgba(22,163,74,.13)}.opt.bad{border-color:var(--r);background:rgba(212,38,44,.12)}
+.nav{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.nav button{padding:6px 0;background:var(--c);color:var(--t);border:1px solid var(--l)}
+.nav .a{background:var(--ok);color:#fff}.nav .q{background:var(--g);color:#000}.nav .cur{outline:3px solid var(--n)}
+.tm{font:700 20px ui-monospace,monospace;color:var(--r)}.bar{height:10px;background:var(--l);border-radius:9px;overflow:hidden}.bar i{display:block;height:100%;background:var(--g)}
+.sc{font-size:46px;font-weight:800;color:var(--n)}@media(prefers-color-scheme:dark){.sc{color:var(--g)}}
+.ex-q{white-space:pre-line}.sm{font-size:13px;color:var(--m)}.scr{max-height:360px;overflow:auto}#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 18px;border-radius:10px;display:none;z-index:9}
+.login{max-width:400px;margin:40px auto;text-align:center}.login img{width:150px}
+</style></head><body>
+<header id="hd"></header><main id="m"></main><div id="toast"></div>
+<script>
+/* ====== ISI DUA BARIS INI DARI SUPABASE > Project Settings > API ====== */
+const SUPABASE_URL='https://zhedyufsqdlerobqwntq.supabase.co', SUPABASE_ANON_KEY='sb_publishable_fyVPQeGhFlobeud3-sytlA_ahexJw46';
+function parseBlocks(blocks){
+  const cl=s=>(s||'').replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim();
+  const out=[],warn=[];let q=null,komp='',st='';
+  const SR=/^(\d+)\.\s*\[\s*(PGS|PGK)\s*\]\s*(.*)$/;
+  const fin=()=>{if(!q)return;
+    if(q.tipe==='PGS'){if(q.opsi.length<2)warn.push('No '+q.nomor+': opsi tidak terbaca');if(!/^[A-E]$/.test(q.kunci||''))warn.push('No '+q.nomor+': kunci tidak terbaca');}
+    else{if(!q.pernyataan.length)warn.push('No '+q.nomor+': tabel pernyataan tidak terbaca');if(!Array.isArray(q.kunci)||q.kunci.length!==q.pernyataan.length)warn.push('No '+q.nomor+': kunci PGK tidak sesuai jumlah pernyataan');}
+    out.push(q);q=null;};
+  for(const b of blocks){
+    if(b.t==='tbl'){
+      const h=(b.rows[0]||[]).map(cl);
+      if(q&&q.tipe==='PGK'&&/pernyataan/i.test(h.join('|'))){
+        q.label=[h[2]||'Sesuai',h[3]||'Tidak Sesuai'];
+        q.pernyataan=b.rows.slice(1).map(r=>({k:cl(r[0]).replace(/\.$/,''),t:cl(r[1])})).filter(s=>s.t);}
+      continue;}
+    const x=cl(b.x);if(!x||/^Bimbel Online SAHWAHITA\s*\|/.test(x))continue;
+    let m;
+    if((m=x.match(/^[A-C]\.\s+KOMPETENSI\s+(\w+)/))){komp=m[1][0]+m[1].slice(1).toLowerCase();continue;}
+    if(/^Nomor\s+\d+\s*[–-]\s*\d+$/i.test(x))continue;
+    if((m=x.match(SR))){fin();q={nomor:+m[1],tipe:m[2],kompetensi:komp,indikator:'',teks:m[3],instruksi:'',opsi:[],pernyataan:[],label:null,kunci:null,pembahasan:'',analisis:'',strategi:''};st='teks';continue;}
+    if(!q)continue;
+    if((m=x.match(/^Kunci\s*:\s*(.*?)\s*\|\s*Indikator\s*:\s*(.+)$/i))){
+      q.indikator=m[2].trim();
+      if(q.tipe==='PGS')q.kunci=(m[1].match(/[A-E]/)||[''])[0];
+      else{const mp={};for(const g of m[1].matchAll(/\(([a-z])\)\s*([^;]+)/gi))mp[g[1].toLowerCase()]=g[2].trim();
+        q.kunci=q.pernyataan.map(p=>mp[p.k.toLowerCase()]||'');}
+      st='kunci';continue;}
+    if((m=x.match(/^Pembahasan\s*:\s*(.*)$/i))){q.pembahasan=m[1];st='pembahasan';continue;}
+    if((m=x.match(/^Analisis opsi\s*:\s*(.*)$/i))){q.analisis=m[1];st='analisis';continue;}
+    if((m=x.match(/^Strategi\s*(?:PGK|PGS)?\s*:\s*(.*)$/i))){q.strategi=m[1];st='strategi';continue;}
+    if(st==='teks'||st==='opsi'){
+      const o=x.match(/^([A-E])\.\s+(.+)$/);
+      if(q.tipe==='PGS'&&o){q.opsi.push({k:o[1],t:o[2]});st='opsi';}
+      else if(q.tipe==='PGK'&&/^(Tentukan|Nyatakan|Pilih)/i.test(x))q.instruksi=x;
+      else if(st==='opsi'&&q.opsi.length)q.opsi[q.opsi.length-1].t+=' '+x;
+      else q.teks+='\n'+x;}
+    else if(st==='pembahasan'||st==='analisis'||st==='strategi')q[st]+=' '+x;
+  }
+  fin();return{soal:out,warn};
+}
+
+const $=s=>document.querySelector(s),e=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+const dt=v=>v?new Date(v).toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'}):'—';
+let U=null,P=null,mode='peserta',tab='paket',ex=null,UP=null;
+function toast(t){const o=$('#toast');o.textContent=t;o.style.display='block';clearTimeout(o._t);o._t=setTimeout(()=>o.style.display='none',3500)}
+const run=async(p)=>{const r=await p;if(r.error){toast(r.error.message);throw r.error}return r.data};
+
+sb.auth.onAuthStateChange((_,s)=>{const n=s?.user||null;if(P&&n&&n.id==U?.id)return;U=n;boot()});
+async function boot(){
+  if(ex){clearInterval(ex.tm);clearInterval(ex.sv);ex=null}
+  if(!U){P=null;return authView()}
+  P=(await sb.from('profiles').select('*').eq('id',U.id).single()).data||{nama:U.email,role:'peserta'};
+  if(P.role!=='admin')mode='peserta';
+  shell();route();
+}
+function shell(){$('#hd').innerHTML=`<img src="logo.png" alt=""><b>SAHWAHITA CAT BCKS</b><span>${e(P.nama)} · ${P.role}</span>
+ ${P.role==='admin'?`<button class="g" onclick="mode=mode=='admin'?'peserta':'admin';shell();route()">${mode=='admin'?'Ke Mode Peserta':'Ke Mode Admin'}</button>`:''}
+ <button class="o" style="color:#fff;border-color:#fff5" onclick="sb.auth.signOut()">Keluar</button>`}
+function route(){if(ex)return;mode=='admin'?admin():pHome()}
+
+/* ---------- AUTH ---------- */
+function authView(){$('#hd').innerHTML='';let reg=false;
+  const d=()=>{$('#m').innerHTML=`<div class="card login"><img src="logo.png" alt=""><h2>${reg?'Daftar Peserta':'Masuk'}</h2>
+  ${reg?'<label>Nama lengkap</label><input id="an">':''}<label>Email</label><input id="ae" type="email"><label>Kata sandi</label><input id="ap" type="password">
+  <p><button style="width:100%" onclick="go()">${reg?'Daftar':'Masuk'}</button></p><a href="#" onclick="tg();return false">${reg?'Sudah punya akun? Masuk':'Belum punya akun? Daftar'}</a></div>`};
+  window.tg=()=>{reg=!reg;d()};
+  window.go=async()=>{const em=$('#ae').value.trim(),pw=$('#ap').value;
+    const r=reg?await sb.auth.signUp({email:em,password:pw,options:{data:{nama:$('#an').value.trim()}}}):await sb.auth.signInWithPassword({email:em,password:pw});
+    if(r.error)return toast(r.error.message);if(reg&&!r.data.session)toast('Pendaftaran berhasil. Cek email untuk konfirmasi, lalu masuk.')};
+  d()}
+
+/* ---------- PESERTA ---------- */
+async function pHome(){
+  const [ss,at]=await Promise.all([run(sb.from('sessions').select('*,packages(judul,durasi_menit)').eq('aktif',true).order('start_at',{ascending:false,nullsFirst:true})),run(sb.from('attempts').select('*').eq('user_id',U.id))]);
+  const now=Date.now();
+  $('#m').innerHTML=`<h2>Sesi Ujian</h2>`+(ss.length?ss.map(s=>{const a=at.find(x=>x.session_id===s.id);
+    const st=s.start_at&&Date.parse(s.start_at)>now?'belum':s.end_at&&Date.parse(s.end_at)<now?'berakhir':'buka';
+    const btn=a?(a.status=='berjalan'?`<button class="g" onclick="openExam('${a.id}')">Lanjutkan</button>`:`<button onclick="showResult('${a.id}')">Lihat Hasil</button>`):st=='buka'?`<button class="g" onclick="startA('${s.id}')">Mulai Ujian</button>`:'';
+    return `<div class="card row"><div style="flex:3"><h3>${e(s.nama)}</h3><div class="sm">${e(s.packages.judul)} · ${s.packages.durasi_menit} menit<br>${dt(s.start_at)} – ${dt(s.end_at)}</div></div>
+    <div><span class="tag ${st=='buka'?'ok':'r'}">${a?(a.status=='selesai'?'Selesai · skor '+a.skor:'Sedang dikerjakan'):st=='buka'?'Dibuka':st=='belum'?'Belum dimulai':'Berakhir'}</span></div><div>${btn}</div></div>`}).join(''):'<div class="card">Belum ada sesi ujian aktif.</div>')}
+async function startA(sid){if(!confirm('Mulai ujian sekarang? Waktu langsung berjalan dan tidak bisa dijeda.'))return;const a=await run(sb.rpc('start_attempt',{p_session:sid}));openExam(a.id)}
+
+async function openExam(id){
+  const a=await run(sb.from('attempts').select('*,packages(*)').eq('id',id).single());
+  if(a.status=='selesai')return showResult(id);
+  const qs=await run(sb.from('questions').select('*').eq('package_id',a.package_id).order('nomor'));
+  const t=await run(sb.rpc('server_time'));
+  ex={a,qs,i:0,ans:a.answers||{},ragu:new Set(a.ragu||[]),dirty:false,off:Date.parse(t)-Date.now(),dl:Date.parse(a.started_at)+a.packages.durasi_menit*60000};
+  ex.tm=setInterval(tick,1000);ex.sv=setInterval(save,20000);drawEx();tick()}
+function tick(){if(!ex)return;const r=ex.dl-(Date.now()+ex.off);if(r<=0)return finish(true);
+  const s=Math.floor(r/1000),el=$('#tm');if(el)el.textContent=[Math.floor(s/3600),Math.floor(s/60)%60,s%60].map(n=>String(n).padStart(2,'0')).join(':')}
+const done=q=>{const v=ex.ans[q.id];return q.tipe=='PGS'?!!v:Array.isArray(v)&&v.some(Boolean)};
+function drawEx(){const q=ex.qs[ex.i],v=ex.ans[q.id];let body;
+  if(q.tipe=='PGS')body=q.opsi.map(o=>`<div class="opt ${v==o.k?'sel':''}" onclick="setA('${q.id}','${o.k}')"><b>${o.k}.</b><span>${e(o.t)}</span></div>`).join('');
+  else{const L=q.label||['Sesuai','Tidak Sesuai'];body=`<table><tr><th>No</th><th>Pernyataan</th>${L.map(l=>`<th>${e(l)}</th>`).join('')}</tr>`+q.pernyataan.map((p,n)=>`<tr><td>${e(p.k)}.</td><td>${e(p.t)}</td>${L.map(l=>`<td><input type="radio" style="width:auto" name="r${n}" ${v&&v[n]==l?'checked':''} onchange="setP('${q.id}',${n},'${e(l)}')"></td>`).join('')}</tr>`).join('')+'</table>'}
+  $('#m').innerHTML=`<div class="ex"><div><div class="card"><div class="row" style="align-items:center"><div><b>Soal ${q.nomor} / ${ex.qs.length}</b> <span class="tag">${q.tipe=='PGS'?'Pilihan Ganda':'Pilihan Ganda Kompleks'}</span></div><div style="text-align:right"><span class="tm" id="tm"></span></div></div><hr style="border:0;border-top:1px solid var(--l)">
+  <p class="ex-q">${e(q.teks)}</p>${q.instruksi?`<p><b>${e(q.instruksi)}</b></p>`:''}${body}
+  <p class="row"><label style="flex:2"><input type="checkbox" style="width:auto" ${ex.ragu.has(q.id)?'checked':''} onchange="rg('${q.id}')"> Ragu-ragu</label>
+  <button class="o" ${ex.i?'':'disabled'} onclick="go2(${ex.i-1})">‹ Sebelumnya</button>${ex.i<ex.qs.length-1?`<button onclick="go2(${ex.i+1})">Selanjutnya ›</button>`:`<button class="r" onclick="finish()">Selesai</button>`}</p></div></div>
+  <div class="card"><b>Navigasi</b><p class="sm">Terjawab ${ex.qs.filter(done).length}/${ex.qs.length}. Hijau=terjawab, kuning=ragu.</p><div class="nav">${ex.qs.map((x,n)=>`<button class="${ex.ragu.has(x.id)?'q':done(x)?'a':''} ${n==ex.i?'cur':''}" onclick="go2(${n})">${x.nomor}</button>`).join('')}</div><p><button class="r" style="width:100%" onclick="finish()">Akhiri Ujian</button></p></div></div>`;tick()}
+const go2=n=>{ex.i=n;drawEx();window.scrollTo(0,0)};
+function setA(id,k){ex.ans[id]=k;ex.dirty=true;drawEx()}
+function setP(id,n,l){const q=ex.qs.find(x=>x.id==id),a=ex.ans[id]||Array(q.pernyataan.length).fill(null);a[n]=l;ex.ans[id]=a;ex.dirty=true;drawEx()}
+function rg(id){ex.ragu.has(id)?ex.ragu.delete(id):ex.ragu.add(id);ex.dirty=true;drawEx()}
+async function save(force){if(!ex||(!ex.dirty&&!force))return;const r=await sb.rpc('save_answers',{p_attempt:ex.a.id,p_answers:ex.ans,p_ragu:[...ex.ragu]});
+  if(r.error)return;ex.dirty=false;if(r.data=='selesai')finish(true,true)}
+async function finish(auto,skip){if(!ex)return;if(!auto){const k=ex.qs.length-ex.qs.filter(done).length;if(!confirm(k?`Masih ${k} soal belum dijawab. Akhiri ujian?`:'Akhiri ujian dan kirim jawaban?'))return}
+  const id=ex.a.id;if(!skip)await save(true);clearInterval(ex.tm);clearInterval(ex.sv);ex=null;
+  await run(sb.rpc('submit_attempt',{p_attempt:id}));if(auto)toast('Waktu habis, jawaban dikirim otomatis.');showResult(id)}
+
+/* ---------- HASIL & PEMBAHASAN ---------- */
+async function showResult(id,back){
+  const a=await run(sb.from('attempts').select('*,packages(*),profiles(nama)').eq('id',id).single());
+  if(a.status!='selesai')return openExam(id);const d=a.skor_detail||{};
+  $('#m').innerHTML=`<div class="card"><h2>Hasil: ${e(a.packages.judul)}</h2><p class="sm">${e(a.profiles?.nama)} · selesai ${dt(a.finished_at)}</p><div class="sc">${a.skor}</div>
+  <p>Poin ${d.poin} dari ${d.maks} · benar penuh ${d.benar} · tidak dijawab ${d.kosong}</p>
+  ${Object.entries(d.per_kompetensi||{}).map(([k,v])=>`<p><b>${e(k)}</b> ${v.poin}/${v.maks}<div class="bar"><i style="width:${v.poin/v.maks*100}%"></i></div></p>`).join('')}
+  <p><button class="o" onclick="${back||'route()'}">‹ Kembali</button> ${a.packages.show_review||P.role=='admin'?`<button class="g" onclick="review('${id}')">Lihat Pembahasan</button>`:''}</p></div><div id="rv"></div>`}
+async function review(id){
+  const a=await run(sb.from('attempts').select('*').eq('id',id).single()),qs=await run(sb.from('questions').select('*').eq('package_id',a.package_id).order('nomor')),ks=await run(sb.rpc('get_review',{p_attempt:id}));
+  $('#rv').innerHTML=qs.map(q=>rv(q,ks.find(k=>k.question_id==q.id),a.answers[q.id])).join('');$('#rv').scrollIntoView()}
+function rv(q,k,ans){const key=k?.kunci;let b;
+  if(q.tipe=='PGS')b=q.opsi.map(o=>`<div class="opt ${o.k==key?'ok':ans==o.k?'bad':''}"><b>${o.k}.</b><span>${e(o.t)}</span></div>`).join('');
+  else b=`<table><tr><th></th><th>Pernyataan</th><th>Jawaban</th><th>Kunci</th></tr>`+q.pernyataan.map((p,n)=>{const u=ans?.[n],c=key?.[n];return`<tr><td>${e(p.k)}.</td><td>${e(p.t)}</td><td class="${u==c?'':'bad'}">${e(u||'—')}</td><td><b>${e(c)}</b></td></tr>`}).join('')+'</table>';
+  return`<div class="card"><b>Soal ${q.nomor}</b> <span class="tag">${e(q.kompetensi)} · ${e(q.indikator)}</span><p class="ex-q">${e(q.teks)}</p>${q.instruksi?`<p><b>${e(q.instruksi)}</b></p>`:''}${b}
+  <p><b>Kunci:</b> ${q.tipe=='PGS'?e(key):e((key||[]).join(', '))}${ans!==undefined?` · <b>Jawaban Anda:</b> ${q.tipe=='PGS'?e(ans||'—'):e((ans||[]).join(', ')||'—')}`:''}</p>
+  ${k?.pembahasan?`<p><b>Pembahasan:</b> ${e(k.pembahasan)}</p>`:''}${k?.analisis?`<p class="sm"><b>Analisis opsi:</b> ${e(k.analisis)}</p>`:''}${k?.strategi?`<p class="sm"><b>Strategi:</b> ${e(k.strategi)}</p>`:''}</div>`}
+
+/* ---------- ADMIN ---------- */
+function admin(){$('#m').innerHTML=`<div class="tabs">${[['paket','Paket & Upload Soal'],['sesi','Sesi Ujian'],['hasil','Hasil'],['user','Peserta']].map(([k,t])=>`<button class="${tab==k?'on':''}" onclick="tab='${k}';admin()">${t}</button>`).join('')}</div><div id="t"></div>`;({paket:aPaket,sesi:aSesi,hasil:aHasil,user:aUser})[tab]()}
+async function aPaket(){
+  const [ps,qc]=await Promise.all([run(sb.from('packages').select('*').order('created_at',{ascending:false})),run(sb.from('questions').select('package_id'))]);UP=null;
+  $('#t').innerHTML=`<div class="card"><h3>Upload Soal</h3><p class="sm">Format .docx seperti "Try Out BCKS Part 1" (nomor, [PGS]/[PGK], opsi A–E, tabel pernyataan PGK, Kunci | Indikator, Pembahasan). Bisa juga file .json hasil ekspor.</p>
+  <input type="file" id="f" accept=".docx,.json" onchange="onFile(this)"><div id="pv"></div></div>
+  <div class="card"><h3>Daftar Paket</h3><table><tr><th>Judul</th><th>Soal</th><th>Durasi</th><th>Pembahasan</th><th>Status</th><th></th></tr>${ps.map(p=>`<tr><td>${e(p.judul)}</td><td>${qc.filter(q=>q.package_id==p.id).length}</td><td>${p.durasi_menit} mnt</td>
+  <td><button class="o" onclick="tgl('${p.id}','show_review',${!p.show_review})">${p.show_review?'Tampil':'Sembunyi'}</button></td><td><button class="o" onclick="tgl('${p.id}','aktif',${!p.aktif})">${p.aktif?'Aktif':'Nonaktif'}</button></td>
+  <td><button class="o" onclick="prev('${p.id}')">Pratinjau</button> <button class="r" onclick="delP('${p.id}')">Hapus</button></td></tr>`).join('')||'<tr><td colspan=6>Belum ada paket.</td></tr>'}</table></div><div id="pr"></div>
+  <datalist id="dl"></datalist>`;window._ps=ps}
+async function tgl(id,c,v){await run(sb.from('packages').update({[c]:v}).eq('id',id));aPaket()}
+async function delP(id){if(confirm('Hapus paket beserta soal, sesi, dan hasilnya?')){await run(sb.from('packages').delete().eq('id',id));aPaket()}}
+async function prev(id){const [qs,ks]=await Promise.all([run(sb.from('questions').select('*').eq('package_id',id).order('nomor')),run(sb.from('question_keys').select('*'))]);
+  $('#pr').innerHTML=qs.map(q=>rv(q,ks.find(k=>k.question_id==q.id))).join('');$('#pr').scrollIntoView()}
+function docBlocks(doc){const t=p=>{let s='';(function w(n){for(const c of n.childNodes){if(c.nodeName=='w:t')s+=c.textContent;else if(c.nodeName=='w:tab')s+='\t';else if(c.nodeType==1)w(c)}})(p);return s};
+  const body=doc.getElementsByTagName('w:body')[0],B=[];
+  for(const n of body.children){if(n.nodeName=='w:p')B.push({t:'p',x:t(n)});
+    else if(n.nodeName=='w:tbl')B.push({t:'tbl',rows:[...n.children].filter(r=>r.nodeName=='w:tr').map(r=>[...r.children].filter(c=>c.nodeName=='w:tc').map(c=>[...c.children].filter(p=>p.nodeName=='w:p').map(t).join(' ')))})}
+  return B}
+async function onFile(inp){const f=inp.files[0];if(!f)return;let soal,warn=[];
+  try{if(/\.json$/i.test(f.name)){const j=JSON.parse(await f.text());soal=j.soal||j}
+    else{const z=await JSZip.loadAsync(f),x=await z.file('word/document.xml').async('string');const r=parseBlocks(docBlocks(new DOMParser().parseFromString(x,'application/xml')));soal=r.soal;warn=r.warn}}
+  catch(x){return toast('Gagal membaca file: '+x.message)}
+  if(!soal.length)return toast('Tidak ada soal yang terbaca. Pastikan penomoran "1. [PGS] ..." sesuai format.');
+  UP={soal};const c=k=>soal.filter(s=>s.tipe==k).length,kk={};soal.forEach(s=>kk[s.kompetensi]=(kk[s.kompetensi]||0)+1);
+  $('#pv').innerHTML=`<h3>Pratinjau: ${soal.length} soal (PGS ${c('PGS')}, PGK ${c('PGK')})</h3><p>${Object.entries(kk).map(([k,v])=>`<span class="tag">${e(k)}: ${v}</span>`).join(' ')}</p>
+  ${warn.length?`<div class="card" style="border-color:var(--r)"><b>Perlu dicek:</b><br>${warn.map(e).join('<br>')}</div>`:'<p style="color:var(--ok)"><b>✓ Semua soal, opsi, dan kunci terbaca lengkap.</b></p>'}
+  <div class="row"><div><label>Judul paket</label><input id="uj" value="${e(f.name.replace(/\.\w+$/,'').replace(/_/g,' '))}"></div><div><label>Durasi (menit)</label><input id="ud" type="number" value="120"></div>
+  <div><label>Simpan ke</label><select id="ut"><option value="">Paket baru</option>${window._ps.map(p=>`<option value="${p.id}">Ganti isi: ${e(p.judul)}</option>`).join('')}</select></div></div>
+  <div class="scr"><table><tr><th>No</th><th>Tipe</th><th>Kompetensi</th><th>Indikator</th><th>Kunci</th><th>Soal</th></tr>${soal.map(s=>`<tr><td>${s.nomor}</td><td>${s.tipe}</td><td>${e(s.kompetensi)}</td><td>${e(s.indikator)}</td><td>${e(Array.isArray(s.kunci)?s.kunci.map(x=>x[0]).join('/'):s.kunci)}</td><td>${e(s.teks.slice(0,70))}…</td></tr>`).join('')}</table></div>
+  <p><button class="g" id="sv" onclick="saveUp()">Simpan ke Database</button></p>`}
+async function saveUp(){const T=$('#ut').value;if(T&&!confirm('Semua soal lama di paket ini akan diganti. Lanjut?'))return;$('#sv').disabled=true;
+  try{let pid=T;if(!pid)pid=(await run(sb.from('packages').insert({judul:$('#uj').value||'Paket Baru',durasi_menit:+$('#ud').value||120}).select().single())).id;
+    else{await run(sb.from('questions').delete().eq('package_id',pid));await run(sb.from('packages').update({durasi_menit:+$('#ud').value||120}).eq('id',pid))}
+    const rows=UP.soal.map(s=>({id:crypto.randomUUID(),package_id:pid,nomor:s.nomor,tipe:s.tipe,kompetensi:s.kompetensi,indikator:s.indikator,teks:s.teks,instruksi:s.instruksi||'',opsi:s.opsi||[],pernyataan:s.pernyataan||[],label:s.label||null}));
+    const keys=rows.map((r,i)=>({question_id:r.id,kunci:UP.soal[i].kunci,pembahasan:UP.soal[i].pembahasan,analisis:UP.soal[i].analisis,strategi:UP.soal[i].strategi}));
+    for(let i=0;i<rows.length;i+=35){await run(sb.from('questions').insert(rows.slice(i,i+35)));await run(sb.from('question_keys').insert(keys.slice(i,i+35)))}
+    toast('Berhasil menyimpan '+rows.length+' soal.');aPaket()}catch(x){$('#sv').disabled=false}}
+
+async function aSesi(){const [ps,ss]=await Promise.all([run(sb.from('packages').select('id,judul').order('judul')),run(sb.from('sessions').select('*,packages(judul)').order('created_at',{ascending:false}))]);
+  $('#t').innerHTML=`<div class="card"><h3>Buat Sesi Ujian</h3><div class="row"><div><label>Paket soal</label><select id="sp">${ps.map(p=>`<option value="${p.id}">${e(p.judul)}</option>`).join('')}</select></div><div><label>Nama sesi</label><input id="sn" placeholder="Try Out BCKS Part 1 – Gelombang 1"></div>
+  <div><label>Mulai</label><input id="s1" type="datetime-local"></div><div><label>Selesai (batas masuk)</label><input id="s2" type="datetime-local"></div></div><p><button class="g" onclick="addS()">Tambah Sesi</button></p></div>
+  <div class="card"><table><tr><th>Sesi</th><th>Paket</th><th>Jadwal</th><th>Status</th><th></th></tr>${ss.map(s=>`<tr><td>${e(s.nama)}</td><td>${e(s.packages.judul)}</td><td>${dt(s.start_at)}<br>${dt(s.end_at)}</td><td><button class="o" onclick="tglS('${s.id}',${!s.aktif})">${s.aktif?'Aktif':'Nonaktif'}</button></td><td><button class="r" onclick="delS('${s.id}')">Hapus</button></td></tr>`).join('')}</table></div>`}
+async function addS(){if(!$('#sn').value)return toast('Isi nama sesi');const v=i=>$(i).value?new Date($(i).value).toISOString():null;
+  await run(sb.from('sessions').insert({package_id:$('#sp').value,nama:$('#sn').value,start_at:v('#s1'),end_at:v('#s2')}));aSesi()}
+async function tglS(id,v){await run(sb.from('sessions').update({aktif:v}).eq('id',id));aSesi()}
+async function delS(id){if(confirm('Hapus sesi beserta hasilnya?')){await run(sb.from('sessions').delete().eq('id',id));aSesi()}}
+
+async function aHasil(sid){const ss=await run(sb.from('sessions').select('id,nama').order('created_at',{ascending:false}));sid=sid||ss[0]?.id;
+  const at=sid?await run(sb.from('attempts').select('*,profiles(nama,email)').eq('session_id',sid).order('skor',{ascending:false,nullsFirst:false})):[];window._at=at;
+  $('#t').innerHTML=`<div class="card row" style="align-items:end"><div style="flex:3"><label>Sesi</label><select onchange="aHasil(this.value)">${ss.map(s=>`<option value="${s.id}" ${s.id==sid?'selected':''}>${e(s.nama)}</option>`).join('')}</select></div><div><button onclick="csv()">Unduh CSV</button></div></div>
+  <div class="card scr"><table><tr><th>#</th><th>Nama</th><th>Email</th><th>Status</th><th>Skor</th><th>Per kompetensi</th><th></th></tr>${at.map((a,i)=>`<tr><td>${i+1}</td><td>${e(a.profiles?.nama)}</td><td>${e(a.profiles?.email)}</td><td>${a.status}</td><td><b>${a.skor??'—'}</b></td>
+  <td class="sm">${Object.entries(a.skor_detail?.per_kompetensi||{}).map(([k,v])=>e(k)+' '+v.poin+'/'+v.maks).join('<br>')}</td><td>${a.status=='selesai'?`<button class="o" onclick="showResult('${a.id}','admin()')">Detail</button> `:`<button class="o" onclick="forceS('${a.id}','${sid}')">Akhiri</button> `}<button class="r" onclick="resetA('${a.id}','${sid}')">Reset</button></td></tr>`).join('')||'<tr><td colspan=7>Belum ada peserta.</td></tr>'}</table></div>`}
+async function forceS(id,s){await run(sb.rpc('submit_attempt',{p_attempt:id}));aHasil(s)}
+async function resetA(id,s){if(confirm('Hapus hasil peserta ini agar bisa mengulang?')){await run(sb.from('attempts').delete().eq('id',id));aHasil(s)}}
+function csv(){const r=[['Nama','Email','Status','Skor','Benar penuh','Kosong','Kepribadian','Sosial','Profesional']];
+  window._at.forEach(a=>{const p=a.skor_detail?.per_kompetensi||{},g=k=>p[k]?p[k].poin+'/'+p[k].maks:'';r.push([a.profiles?.nama,a.profiles?.email,a.status,a.skor,a.skor_detail?.benar,a.skor_detail?.kosong,g('Kepribadian'),g('Sosial'),g('Profesional')])});
+  const b=new Blob(['\ufeff'+r.map(x=>x.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n')],{type:'text/csv'});const l=document.createElement('a');l.href=URL.createObjectURL(b);l.download='hasil-cat-bcks.csv';l.click()}
+
+async function aUser(){const u=await run(sb.from('profiles').select('*').order('created_at',{ascending:false}));
+  $('#t').innerHTML=`<div class="card"><table><tr><th>Nama</th><th>Email</th><th>Peran</th><th></th></tr>${u.map(x=>`<tr><td>${e(x.nama)}</td><td>${e(x.email)}</td><td>${x.role}</td><td>${x.id==U.id?'':`<button class="o" onclick="setR('${x.id}','${x.role=='admin'?'peserta':'admin'}')">Jadikan ${x.role=='admin'?'peserta':'admin'}</button>`}</td></tr>`).join('')}</table></div>`}
+async function setR(id,r){await run(sb.from('profiles').update({role:r}).eq('id',id));aUser()}
+</script></body></html>
