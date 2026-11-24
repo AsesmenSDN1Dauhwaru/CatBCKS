@@ -148,10 +148,10 @@ async function finish(auto,skip){if(!ex)return;if(!auto){const k=ex.qs.length-ex
 async function showResult(id,back){
   const a=await run(sb.from('attempts').select('*,packages(*),profiles(nama)').eq('id',id).single());
   if(a.status!='selesai')return openExam(id);const d=a.skor_detail||{};
-  $('#m').innerHTML=`<div class="card"><h2>Hasil: ${e(a.packages.judul)}</h2><p class="sm">${e(a.profiles?.nama)} · selesai ${dt(a.finished_at)}</p><div class="sc">${a.skor}</div>
-  <p>Poin ${d.poin} dari ${d.maks} · benar penuh ${d.benar} · tidak dijawab ${d.kosong}</p>
+  $('#m').innerHTML=`<div class="card"><h2>Hasil: ${e(a.packages.judul)}</h2><p class="sm">${e(a.profiles?.nama)} · selesai ${dt(a.finished_at)}</p><div class="sc">${a.skor}</div>${a.packages.ambang!=null?`<p><span class="tag ${a.skor>=a.packages.ambang?'ok':'r'}" style="font-size:18px;padding:5px 16px">${a.skor>=a.packages.ambang?'LULUS':'TIDAK LULUS'}</span> <span class="sm">ambang batas ${a.packages.ambang}</span></p>`:''}
+  <p><b>Poin ${d.poin} dari ${d.maks}</b> · benar penuh ${d.benar} · tidak dijawab ${d.kosong}</p>
   ${Object.entries(d.per_kompetensi||{}).map(([k,v])=>`<p><b>${e(k)}</b> ${v.poin}/${v.maks}<div class="bar"><i style="width:${v.poin/v.maks*100}%"></i></div></p>`).join('')}
-  <p><button class="o" onclick="${back||'route()'}">‹ Kembali</button> ${a.packages.show_review||P.role=='admin'?`<button class="g" onclick="review('${id}')">Lihat Pembahasan</button>`:''}</p></div><div id="rv"></div>`}
+  <p><button class="o" onclick="${back||'route()'}">‹ Kembali</button> ${a.packages.show_review||P.role=='admin'?`<button class="g" onclick="review('${id}')">Jawaban Benar & Pembahasan</button>`:''}</p></div><div id="rv"></div>`}
 async function review(id){
   const a=await run(sb.from('attempts').select('*').eq('id',id).single()),qs=await run(sb.from('questions').select('*').eq('package_id',a.package_id).order('nomor')),ks=await run(sb.rpc('get_review',{p_attempt:id}));
   $('#rv').innerHTML=qs.map(q=>rv(q,ks.find(k=>k.question_id==q.id),a.answers[q.id])).join('');$('#rv').scrollIntoView()}
@@ -168,10 +168,11 @@ async function aPaket(){
   const [ps,qc]=await Promise.all([run(sb.from('packages').select('*').order('created_at',{ascending:false})),run(sb.from('questions').select('package_id'))]);UP=null;
   $('#t').innerHTML=`<div class="card"><h3>Upload Soal</h3><p class="sm">Format .docx seperti "Try Out BCKS Part 1" (nomor, [PGS]/[PGK], opsi A–E, tabel pernyataan PGK, Kunci | Indikator, Pembahasan). Bisa juga file .json hasil ekspor.</p>
   <input type="file" id="f" accept=".docx,.json" onchange="onFile(this)"><div id="pv"></div></div>
-  <div class="card"><h3>Daftar Paket</h3><table><tr><th>Judul</th><th>Soal</th><th>Durasi</th><th>Pembahasan</th><th>Status</th><th></th></tr>${ps.map(p=>`<tr><td>${e(p.judul)}</td><td>${qc.filter(q=>q.package_id==p.id).length}</td><td>${p.durasi_menit} mnt</td>
+  <div class="card"><h3>Daftar Paket</h3><table><tr><th>Judul</th><th>Soal</th><th>Durasi</th><th>Ambang batas</th><th>Pembahasan</th><th>Status</th><th></th></tr>${ps.map(p=>`<tr><td>${e(p.judul)}</td><td>${qc.filter(q=>q.package_id==p.id).length}</td><td>${p.durasi_menit} mnt</td><td><input type="number" min="0" max="100" step="0.01" style="width:90px" placeholder="0-100" value="${p.ambang??''}" onchange="setAmb('${p.id}',this.value)"></td>
   <td><button class="o" onclick="tgl('${p.id}','show_review',${!p.show_review})">${p.show_review?'Tampil':'Sembunyi'}</button></td><td><button class="o" onclick="tgl('${p.id}','aktif',${!p.aktif})">${p.aktif?'Aktif':'Nonaktif'}</button></td>
-  <td><button class="o" onclick="prev('${p.id}')">Pratinjau</button> <button class="r" onclick="delP('${p.id}')">Hapus</button></td></tr>`).join('')||'<tr><td colspan=6>Belum ada paket.</td></tr>'}</table></div><div id="pr"></div>
+  <td><button class="o" onclick="prev('${p.id}')">Pratinjau</button> <button class="r" onclick="delP('${p.id}')">Hapus</button></td></tr>`).join('')||'<tr><td colspan=7>Belum ada paket.</td></tr>'}</table></div><div id="pr"></div>
   <datalist id="dl"></datalist>`;window._ps=ps}
+async function setAmb(id,v){await run(sb.from('packages').update({ambang:v===''?null:+v}).eq('id',id));toast('Ambang batas disimpan')}
 async function tgl(id,c,v){await run(sb.from('packages').update({[c]:v}).eq('id',id));aPaket()}
 async function delP(id){if(confirm('Hapus paket beserta soal, sesi, dan hasilnya?')){await run(sb.from('packages').delete().eq('id',id));aPaket()}}
 async function prev(id){const [qs,ks]=await Promise.all([run(sb.from('questions').select('*').eq('package_id',id).order('nomor')),run(sb.from('question_keys').select('*'))]);
@@ -211,14 +212,15 @@ async function tglS(id,v){await run(sb.from('sessions').update({aktif:v}).eq('id
 async function delS(id){if(confirm('Hapus sesi beserta hasilnya?')){await run(sb.from('sessions').delete().eq('id',id));aSesi()}}
 
 async function aHasil(sid){const ss=await run(sb.from('sessions').select('id,nama').order('created_at',{ascending:false}));sid=sid||ss[0]?.id;
-  const at=sid?await run(sb.from('attempts').select('*,profiles(nama,email)').eq('session_id',sid).order('skor',{ascending:false,nullsFirst:false})):[];window._at=at;
+  const at=sid?await run(sb.from('attempts').select('*,profiles(nama,email),packages(ambang)').eq('session_id',sid).order('skor',{ascending:false,nullsFirst:false})):[];window._at=at;
   $('#t').innerHTML=`<div class="card row" style="align-items:end"><div style="flex:3"><label>Sesi</label><select onchange="aHasil(this.value)">${ss.map(s=>`<option value="${s.id}" ${s.id==sid?'selected':''}>${e(s.nama)}</option>`).join('')}</select></div><div><button onclick="csv()">Unduh CSV</button></div></div>
-  <div class="card scr"><table><tr><th>#</th><th>Nama</th><th>Email</th><th>Status</th><th>Skor</th><th>Per kompetensi</th><th></th></tr>${at.map((a,i)=>`<tr><td>${i+1}</td><td>${e(a.profiles?.nama)}</td><td>${e(a.profiles?.email)}</td><td>${a.status}</td><td><b>${a.skor??'—'}</b></td>
-  <td class="sm">${Object.entries(a.skor_detail?.per_kompetensi||{}).map(([k,v])=>e(k)+' '+v.poin+'/'+v.maks).join('<br>')}</td><td>${a.status=='selesai'?`<button class="o" onclick="showResult('${a.id}','admin()')">Detail</button> `:`<button class="o" onclick="forceS('${a.id}','${sid}')">Akhiri</button> `}<button class="r" onclick="resetA('${a.id}','${sid}')">Reset</button></td></tr>`).join('')||'<tr><td colspan=7>Belum ada peserta.</td></tr>'}</table></div>`}
+  <div class="card scr"><table><tr><th>#</th><th>Nama</th><th>Email</th><th>Status</th><th>Skor</th><th>Poin</th><th>Lulus?</th><th>Per kompetensi</th><th></th></tr>${at.map((a,i)=>`<tr><td>${i+1}</td><td>${e(a.profiles?.nama)}</td><td>${e(a.profiles?.email)}</td><td>${a.status}</td><td><b>${a.skor??'—'}</b></td><td>${a.skor_detail?a.skor_detail.poin+'/'+a.skor_detail.maks:'—'}</td><td>${lul(a)}</td>
+  <td class="sm">${Object.entries(a.skor_detail?.per_kompetensi||{}).map(([k,v])=>e(k)+' '+v.poin+'/'+v.maks).join('<br>')}</td><td>${a.status=='selesai'?`<button class="o" onclick="showResult('${a.id}','admin()')">Detail</button> `:`<button class="o" onclick="forceS('${a.id}','${sid}')">Akhiri</button> `}<button class="r" onclick="resetA('${a.id}','${sid}')">Reset</button></td></tr>`).join('')||'<tr><td colspan=9>Belum ada peserta.</td></tr>'}</table></div>`}
+const lul=a=>a.status!='selesai'||a.packages?.ambang==null?'—':a.skor>=a.packages.ambang?'Lulus':'Tidak lulus';
 async function forceS(id,s){await run(sb.rpc('submit_attempt',{p_attempt:id}));aHasil(s)}
 async function resetA(id,s){if(confirm('Hapus hasil peserta ini agar bisa mengulang?')){await run(sb.from('attempts').delete().eq('id',id));aHasil(s)}}
-function csv(){const r=[['Nama','Email','Status','Skor','Benar penuh','Kosong','Kepribadian','Sosial','Profesional']];
-  window._at.forEach(a=>{const p=a.skor_detail?.per_kompetensi||{},g=k=>p[k]?p[k].poin+'/'+p[k].maks:'';r.push([a.profiles?.nama,a.profiles?.email,a.status,a.skor,a.skor_detail?.benar,a.skor_detail?.kosong,g('Kepribadian'),g('Sosial'),g('Profesional')])});
+function csv(){const r=[['Nama','Email','Status','Skor','Poin','Lulus?','Benar penuh','Kosong','Kepribadian','Sosial','Profesional']];
+  window._at.forEach(a=>{const p=a.skor_detail?.per_kompetensi||{},g=k=>p[k]?p[k].poin+'/'+p[k].maks:'';r.push([a.profiles?.nama,a.profiles?.email,a.status,a.skor,a.skor_detail?.poin,lul(a),a.skor_detail?.benar,a.skor_detail?.kosong,g('Kepribadian'),g('Sosial'),g('Profesional')])});
   const b=new Blob(['\ufeff'+r.map(x=>x.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n')],{type:'text/csv'});const l=document.createElement('a');l.href=URL.createObjectURL(b);l.download='hasil-cat-bcks.csv';l.click()}
 
 async function aUser(){const u=await run(sb.from('profiles').select('*').order('created_at',{ascending:false}));
